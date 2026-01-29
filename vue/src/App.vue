@@ -28,6 +28,7 @@
             >
               <option :value="Environment.intl">International</option>
               <option :value="Environment.cn">CN</option>
+              <option :value="Environment.test">Test</option>
             </select>
             <label style="color: white; font-size: 14px; margin-right: 4px">Sample Rate:</label>
             <select
@@ -99,7 +100,7 @@
         </div>
         <p v-if="sdkInitializing" style="color: #ffeb3b; margin: 0">⏳ Initializing SDK...</p>
         <p v-if="globalSDKInitialized && currentDrivingServiceMode" style="color: #10b981; margin: 0">
-          ✅ SDK initialized ({{ currentDrivingServiceMode === DrivingServiceMode.sdk ? 'SDK Mode' : 'Host Mode' }}, {{ selectedEnvironment === Environment.cn ? 'CN' : 'International' }})
+          ✅ SDK initialized ({{ currentDrivingServiceMode === DrivingServiceMode.sdk ? 'SDK Mode' : 'Host Mode' }}, {{ selectedEnvironment === Environment.cn ? 'CN' : selectedEnvironment === Environment.test ? 'Test' : 'International' }})
         </p>
         <button 
           v-if="panels.length < 4"
