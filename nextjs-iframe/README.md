@@ -17,7 +17,7 @@ Due to incompatibility between Vite-packaged WASM files and Next.js webpack conf
 ### 1. Install Dependencies
 
 ```bash
-cd nextjs
+cd nextjs-iframe
 npm run install:all
 ```
 
@@ -46,7 +46,7 @@ The Next.js app will embed the SDK demo in an iframe from the Vite dev server.
 ## 📁 Project Structure
 
 ```
-nextjs/
+nextjs-iframe/
 ├── app/                    # Next.js App Router
 │   ├── layout.tsx         # Root layout
 │   ├── page.tsx           # Main page with iframe

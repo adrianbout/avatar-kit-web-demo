@@ -28,7 +28,7 @@ cd AvatarKit-Web-Demo
 ### 2. Choose an Example and Install Dependencies
 
 ```bash
-cd vanilla  # or react, vue, nextjs
+cd vanilla  # or react, vue, nextjs-direct, nextjs-iframe
 npm install
 ```
 
@@ -173,7 +173,35 @@ npm run dev
 - Independent panel state management
 - Add custom avatar IDs dynamically via ➕ button
 
-### 4. Next.js iframe Example (`nextjs/`)
+### 4. Next.js Direct Integration Example (`nextjs-direct/`)
+
+Complete example using Next.js 14+ with App Router and direct SDK integration using the `withAvatarkit` Next.js plugin.
+
+**Use Cases:**
+- Next.js project integration with full SDK control
+- Direct SDK access without iframe overhead
+- Single-deployment architectures
+
+**Run:**
+```bash
+cd nextjs-direct
+npm install
+npm run dev
+```
+
+**Access:** `http://localhost:5177`
+
+**Features:**
+- Next.js 14+ App Router
+- Direct SDK integration (no iframe)
+- Automatic WASM configuration via `withAvatarkit()` plugin
+- TypeScript support
+- React Hooks architecture
+- Production-ready configuration
+
+**See:** `nextjs-direct/README.md` for detailed documentation
+
+### 5. Next.js iframe Example (`nextjs-iframe/`)
 
 Complete example using Next.js 14+ with App Router and iframe integration to avoid WASM packaging conflicts.
 
@@ -185,7 +213,7 @@ Complete example using Next.js 14+ with App Router and iframe integration to avo
 
 **Run:**
 ```bash
-cd nextjs
+cd nextjs-iframe
 npm run install:all  # Install dependencies for both Next.js and iframe content
 npm run dev          # Starts both services automatically
 ```
@@ -201,20 +229,9 @@ npm run dev          # Starts both services automatically
 - postMessage communication between Next.js and iframe
 - TypeScript support
 - Production-ready configuration
-- Add custom avatar IDs dynamically via ➕ button
+- Add custom avatar IDs dynamically via + button
 
-**Key Considerations:**
-- ✅ SDK runs in separate iframe (Vite app) to avoid packaging conflicts
-- ✅ No special WASM configuration needed in Next.js
-- ✅ **Development**: Two services for hot reload (standard practice)
-- ✅ **Production**: Single deployment (iframe content included in build)
-- ✅ Clean separation of concerns
-- ✅ Cross-origin communication via postMessage
-
-**Why iframe?**
-Due to incompatibility between Vite-packaged WASM files and Next.js webpack configuration, directly integrating the SDK can cause packaging issues. Using an iframe approach completely isolates the SDK environment while keeping deployment simple.
-
-**See:** `nextjs/README.md` for detailed Next.js iframe integration documentation
+**See:** `nextjs-iframe/README.md` for detailed Next.js iframe integration documentation
 
 ## ⚙️ Prerequisites
 
