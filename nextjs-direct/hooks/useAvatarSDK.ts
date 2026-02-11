@@ -146,6 +146,18 @@ export function useAvatarSDK() {
     avatarController.yieldFramesData(keyframes, conversationId)
   }
 
+  // Get current conversation ID
+  const getCurrentConversationId = useCallback((): string | null => {
+    if (!avatarController) {
+      return null
+    }
+    const controller = avatarController as any
+    if (typeof controller.getCurrentConversationId === 'function') {
+      return controller.getCurrentConversationId()
+    }
+    return null
+  }, [avatarController])
+
   // Interrupt conversation
   const interrupt = useCallback(() => {
     if (!avatarController) {
@@ -232,6 +244,7 @@ export function useAvatarSDK() {
     sendAudio,
     yieldAudioData,
     yieldFramesData,
+    getCurrentConversationId,
     interrupt,
     pause,
     resume,

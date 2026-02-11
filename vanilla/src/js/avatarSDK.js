@@ -170,6 +170,7 @@ export class AvatarSDKManager {
     }
 
     this.logger.info('Starting to connect WebSocket service')
+    await this.initializeAudioContext()
     await this.avatarView.controller.start()
     this.logger.success('Connection request sent')
   }
@@ -292,6 +293,19 @@ export class AvatarSDKManager {
       throw new Error('conversationId is required for yieldFramesData()')
     }
     this.avatarView.controller.yieldFramesData(keyframes, conversationId)
+  }
+
+  /**
+   * Initialize audio context (MUST be called in user gesture context)
+   * @returns {Promise<void>}
+   */
+  async initializeAudioContext() {
+    if (!this.avatarView?.controller) {
+      throw new Error('Avatar not loaded')
+    }
+    if (typeof this.avatarView.controller.initializeAudioContext === 'function') {
+      await this.avatarView.controller.initializeAudioContext()
+    }
   }
 
   /**

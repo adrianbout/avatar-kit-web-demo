@@ -1,5 +1,5 @@
 import { fileURLToPath } from 'node:url'
-import { dirname } from 'node:path'
+import { dirname, resolve } from 'node:path'
 import { defineConfig } from 'vite'
 import { avatarkitVitePlugin } from '@spatialwalk/avatarkit/vite'
 
@@ -16,6 +16,14 @@ export default defineConfig({
     avatarkitVitePlugin(),
   ],
   root: __dirname,
+  build: {
+    rollupOptions: {
+      input: {
+        main: resolve(__dirname, 'index.html'),
+        demo: resolve(__dirname, 'demo.html'),
+      },
+    },
+  },
   server: {
     port: 5174,
     open: true,
