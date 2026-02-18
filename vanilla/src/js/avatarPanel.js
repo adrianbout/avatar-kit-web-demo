@@ -7,6 +7,7 @@ import { Logger, updateStatus } from './logger.js'
 import { AudioRecorder } from './audioRecorder.js'
 import { AvatarSDKManager } from './avatarSDK.js'
 import { resampleAudio, resampleAudioWithWebAudioAPI, convertToInt16PCM, convertToUint8Array, decodeAudioFile } from '../utils/audioUtils.js'
+import { saveToStorage, loadFromStorage } from './storage.js'
 
 export class AvatarPanel {
   constructor(panelId, container, globalSDKInitialized, onRemove, getSampleRateFn = null) {
@@ -230,6 +231,25 @@ export class AvatarPanel {
 
     // Set logger logPanel
     this.logger.logPanel = this.elements.logPanel
+
+    // Restore cached avatar ID list
+    const cachedAvatarIdList = loadFromStorage('avatarIdList', [])
+    const cachedLastAvatarId = loadFromStorage('lastAvatarId', '')
+    if (cachedAvatarIdList.length > 0) {
+      const select = this.elements.avatarId
+      cachedAvatarIdList.forEach(id => {
+        const option = document.createElement('option')
+        option.value = id
+        option.textContent = id
+        select.appendChild(option)
+      })
+      if (cachedLastAvatarId && cachedAvatarIdList.includes(cachedLastAvatarId)) {
+        select.value = cachedLastAvatarId
+      }
+    }
+    this.elements.avatarId.addEventListener('change', () => {
+      saveToStorage('lastAvatarId', this.elements.avatarId.value)
+    })
 
     // Start FPS monitoring (每个面板独立监控)
     this.startFPSMonitoring()
@@ -486,6 +506,11 @@ export class AvatarPanel {
     // Select the new ID
     select.value = newId
     select.dispatchEvent(new Event('change'))
+
+    // Save to cache
+    const allIds = Array.from(select.options).map(opt => opt.value).filter(Boolean)
+    saveToStorage('avatarIdList', allIds)
+    saveToStorage('lastAvatarId', newId)
     
     this.logger.info(`Added new Avatar ID: ${newId}`)
     this.updateStatus(`Added new Avatar ID: ${newId}`, 'success')

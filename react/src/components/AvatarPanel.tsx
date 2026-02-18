@@ -14,6 +14,7 @@ import { ControlPanel } from './ControlPanel'
 import { AvatarCanvas } from './AvatarCanvas'
 import { LogPanel } from './LogPanel'
 import { resampleAudioWithWebAudioAPI, convertToInt16PCM, convertToUint8Array, decodeAudioFile } from '../utils/audioUtils'
+import { saveToStorage, loadFromStorage } from '../utils/storage'
 import './AvatarPanel.css'
 
 interface AvatarPanelProps {
@@ -25,8 +26,8 @@ interface AvatarPanelProps {
 
 export function AvatarPanel({ panelId, globalSDKInitialized, onRemove, getSampleRate }: AvatarPanelProps) {
   // Configuration state
-  const [avatarIdList, setAvatarIdList] = useState<string[]>([])
-  const [avatarId, setAvatarId] = useState('')
+  const [avatarIdList, setAvatarIdList] = useState<string[]>(() => loadFromStorage('avatarIdList', []))
+  const [avatarId, setAvatarId] = useState(() => loadFromStorage('lastAvatarId', ''))
   const [isLoading, setIsLoading] = useState(false)
   const [volume, setVolume] = useState(100)
   const [conversationState, setConversationState] = useState<ConversationState | null>(null)
@@ -693,9 +694,12 @@ export function AvatarPanel({ panelId, globalSDKInitialized, onRemove, getSample
             avatarIdList={avatarIdList}
             onAvatarIdChange={(id) => {
               setAvatarId(id)
+              saveToStorage('lastAvatarId', id)
               // Add to list if not exists
               if (id && !avatarIdList.includes(id)) {
-                setAvatarIdList([...avatarIdList, id])
+                const newList = [...avatarIdList, id]
+                setAvatarIdList(newList)
+                saveToStorage('avatarIdList', newList)
               }
             }}
             onLoadAvatar={() => handleLoadAvatar()}

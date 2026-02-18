@@ -5,6 +5,7 @@
 
 import { AvatarPanel } from './avatarPanel.js'
 import { AvatarSDK, Environment } from '@spatialwalk/avatarkit'
+import { saveToStorage, loadFromStorage, saveSessionToken, loadSessionToken } from './storage.js'
 
 /**
  * Main application class
@@ -260,6 +261,8 @@ export class App {
       <option value="intl" selected>International</option>
       <option value="cn">CN</option>
     `
+    envSelect.value = loadFromStorage('environment', 'intl')
+    envSelect.addEventListener('change', () => saveToStorage('environment', envSelect.value))
     
     // Create Sample Rate selector
     const sampleRateLabel = document.createElement('label')
@@ -279,6 +282,8 @@ export class App {
       <option value="44100">44100 Hz</option>
       <option value="48000">48000 Hz</option>
     `
+    sampleRateSelect.value = String(loadFromStorage('sampleRate', 16000))
+    sampleRateSelect.addEventListener('change', () => saveToStorage('sampleRate', parseInt(sampleRateSelect.value, 10)))
     
     // Create App ID input
     const appIdLabel = document.createElement('label')
@@ -289,9 +294,10 @@ export class App {
     appIdInput.id = 'sdkAppIdInput'
     appIdInput.type = 'text'
     appIdInput.placeholder = 'App ID'
-    appIdInput.value = ''
+    appIdInput.value = loadFromStorage('appId', '')
     appIdInput.disabled = this.globalSDKInitialized
     appIdInput.style.cssText = 'padding: 8px 12px; border-radius: 6px; border: none; font-size: 14px; background: white; color: #333; min-width: 300px;'
+    appIdInput.addEventListener('input', () => saveToStorage('appId', appIdInput.value))
     
     // Create Session Token input
     const sessionTokenLabel = document.createElement('label')
@@ -302,7 +308,9 @@ export class App {
     sessionTokenInput.id = 'sdkSessionTokenInput'
     sessionTokenInput.type = 'text'
     sessionTokenInput.placeholder = 'Session Token'
+    sessionTokenInput.value = loadSessionToken()
     sessionTokenInput.style.cssText = 'padding: 8px 12px; border-radius: 6px; border: 1px solid #ccc; font-size: 14px; background: white; color: #333; min-width: 300px; cursor: text;'
+    sessionTokenInput.addEventListener('input', () => saveSessionToken(sessionTokenInput.value))
     
     // Create Inject button for injecting token
     const injectTokenButton = document.createElement('button')

@@ -6,6 +6,7 @@
 import { useState, useEffect } from 'react'
 import { AvatarPanel } from './components/AvatarPanel'
 import { AvatarSDK, Environment, DrivingServiceMode } from '@spatialwalk/avatarkit'
+import { saveToStorage, loadFromStorage, saveSessionToken, loadSessionToken } from './utils/storage'
 import './App.css'
 
 interface Panel {
@@ -17,10 +18,10 @@ function App() {
   const [globalSDKInitialized, setGlobalSDKInitialized] = useState(false)
   const [sdkInitializing, setSdkInitializing] = useState(false)
   const [currentDrivingServiceMode, setCurrentDrivingServiceMode] = useState<DrivingServiceMode | null>(null)
-  const [selectedEnvironment, setSelectedEnvironment] = useState<Environment>(Environment.intl)
-  const [selectedSampleRate, setSelectedSampleRate] = useState(16000)
-  const [appId, setAppId] = useState('')
-  const [sessionToken, setSessionToken] = useState('')
+  const [selectedEnvironment, setSelectedEnvironment] = useState<Environment>(() => loadFromStorage('environment', Environment.intl) as Environment)
+  const [selectedSampleRate, setSelectedSampleRate] = useState(() => loadFromStorage('sampleRate', 16000))
+  const [appId, setAppId] = useState(() => loadFromStorage('appId', ''))
+  const [sessionToken, setSessionToken] = useState(() => loadSessionToken())
 
   // 检查是否已经初始化
   useEffect(() => {
@@ -29,6 +30,12 @@ function App() {
       setCurrentDrivingServiceMode(AvatarSDK.configuration?.drivingServiceMode || DrivingServiceMode.sdk)
     }
   }, [])
+
+  // Persist inputs to localStorage
+  useEffect(() => { saveToStorage('appId', appId) }, [appId])
+  useEffect(() => { saveSessionToken(sessionToken) }, [sessionToken])
+  useEffect(() => { saveToStorage('environment', selectedEnvironment) }, [selectedEnvironment])
+  useEffect(() => { saveToStorage('sampleRate', selectedSampleRate) }, [selectedSampleRate])
 
   // 手动初始化 SDK (SDK Mode)
   const handleInitSDK = async (mode: DrivingServiceMode) => {

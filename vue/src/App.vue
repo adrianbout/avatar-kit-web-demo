@@ -127,9 +127,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, watch, onMounted } from 'vue'
 import AvatarPanel from './components/AvatarPanel.vue'
 import { AvatarSDK, Environment, DrivingServiceMode } from '@spatialwalk/avatarkit'
+import { saveToStorage, loadFromStorage, saveSessionToken, loadSessionToken } from './utils/storage'
 
 interface Panel {
   id: string
@@ -139,11 +140,17 @@ const panels = ref<Panel[]>([{ id: '1' }])
 const globalSDKInitialized = ref(false)
 const sdkInitializing = ref(false)
 const currentDrivingServiceMode = ref<DrivingServiceMode | null>(null)
-const selectedEnvironment = ref<Environment>(Environment.intl)
-const selectedSampleRate = ref(16000)
-const appId = ref('')
-const sessionToken = ref('')
+const selectedEnvironment = ref<Environment>(loadFromStorage('environment', Environment.intl) as Environment)
+const selectedSampleRate = ref(loadFromStorage('sampleRate', 16000))
+const appId = ref(loadFromStorage('appId', ''))
+const sessionToken = ref(loadSessionToken())
 const injectButtonHover = ref(false)
+
+// Persist inputs to localStorage
+watch(appId, (val) => saveToStorage('appId', val))
+watch(sessionToken, (val) => saveSessionToken(val))
+watch(selectedEnvironment, (val) => saveToStorage('environment', val))
+watch(selectedSampleRate, (val) => saveToStorage('sampleRate', val))
 
 // 检查是否已经初始化
 onMounted(async () => {

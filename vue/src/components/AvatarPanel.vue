@@ -207,6 +207,7 @@ import { AvatarSDK, DrivingServiceMode, ConversationState } from '@spatialwalk/a
 import { useLogger } from '../composables/useLogger'
 import { useAudioRecorder } from '../composables/useAudioRecorder'
 import { resampleAudioWithWebAudioAPI, convertToInt16PCM, convertToUint8Array, decodeAudioFile } from '../utils/audioUtils'
+import { saveToStorage, loadFromStorage } from '../utils/storage'
 import StatusBar from './StatusBar.vue'
 import ControlPanel from './ControlPanel.vue'
 import AvatarCanvas from './AvatarCanvas.vue'
@@ -222,8 +223,8 @@ interface Props {
 const props = defineProps<Props>()
 
 // Configuration state
-const avatarIdList = ref<string[]>([])
-const avatarId = ref('')
+const avatarIdList = ref<string[]>(loadFromStorage('avatarIdList', []))
+const avatarId = ref(loadFromStorage('lastAvatarId', ''))
 const isLoading = ref(false)
 const conversationState = ref<ConversationState | null>(null)
 const volume = ref(100)
@@ -916,8 +917,10 @@ watch(() => props.globalSDKInitialized, (initialized) => {
 // Event handlers
 const handleAvatarIdChange = (id: string) => {
   avatarId.value = id
+  saveToStorage('lastAvatarId', id)
   if (id && !avatarIdList.value.includes(id)) {
     avatarIdList.value.push(id)
+    saveToStorage('avatarIdList', [...avatarIdList.value])
   }
 }
 
