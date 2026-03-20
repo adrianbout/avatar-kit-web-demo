@@ -1,8 +1,14 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  // No WASM configuration needed since SDK runs in iframe
+  async rewrites() {
+    return [
+      {
+        source: '/iframe/:path*',
+        destination: 'http://localhost:5178/:path*',
+      },
+    ]
+  },
 }
 
 module.exports = nextConfig
-

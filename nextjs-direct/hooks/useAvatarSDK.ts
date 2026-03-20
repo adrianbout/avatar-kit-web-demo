@@ -1,256 +1,124 @@
-/**
- * Avatar SDK Hook
- * Encapsulates SDK initialization and usage logic
- */
+'use client'
 
-import { useState, useRef, useEffect, useCallback } from 'react'
-import { AvatarSDK, AvatarManager, AvatarView, Environment, DrivingServiceMode, type AvatarController, type ConnectionState, type ConversationState } from '@spatialwalk/avatarkit'
+import { useState, useCallback, useRef, useEffect } from 'react'
+import {
+  AvatarManager,
+  AvatarView,
+  type AvatarController,
+  type ConnectionState,
+  type ConversationState,
+} from '@spatialwalk/avatarkit'
 
-export function useAvatarSDK() {
-  const [isConnected, setIsConnected] = useState(false)
-  const [avatarView, setAvatarView] = useState<AvatarView | null>(null)
-  const [avatarController, setAvatarController] = useState<AvatarController | null>(null)
-  const avatarManagerRef = useRef<AvatarManager | null>(null)
-  const avatarViewRef = useRef<AvatarView | null>(null)
+export interface AvatarInstance {
+  uid: string
+  characterId: string
+  characterName: string
+  view: AvatarView | null
+  connectionState: ConnectionState
+  conversationState: ConversationState
+  loading: boolean
+  loadProgress: number // 0-100
+  error: string | null
+}
 
-  // 获取 AvatarManager（延迟初始化）
-  const getAvatarManager = () => {
-    if (!avatarManagerRef.current && AvatarSDK.isInitialized) {
-      avatarManagerRef.current = AvatarManager.shared
-    }
-    return avatarManagerRef.current
-  }
+let uidCounter = 0
+const genUid = () => `avatar-${++uidCounter}`
 
-  // Initialize SDK
-  const initialize = async (appId: string, environment: Environment, drivingServiceMode: DrivingServiceMode = DrivingServiceMode.sdk, sessionToken?: string) => {
-    try {
-      if (!appId.trim()) {
-        throw new Error('App ID is required')
-      }
-      await AvatarSDK.initialize(appId, {
-        environment,
-        drivingServiceMode
-      })
+export function useAvatarManager() {
+  const [avatars, setAvatars] = useState<AvatarInstance[]>([])
+  const [activeUid, setActiveUid] = useState<string | null>(null)
+  const viewRefs = useRef<Map<string, AvatarView>>(new Map())
 
-      if (sessionToken) {
-        AvatarSDK.setSessionToken(sessionToken)
-      }
+  const activeAvatar = avatars.find(a => a.uid === activeUid) ?? null
+  const activeController: AvatarController | null = activeAvatar?.view?.controller ?? null
 
-      avatarManagerRef.current = AvatarManager.shared
-    } catch (error) {
-      throw new Error(`SDK initialization failed: ${error instanceof Error ? error.message : String(error)}`)
-    }
-  }
+  const updateAvatar = useCallback((uid: string, patch: Partial<AvatarInstance>) => {
+    setAvatars(prev => prev.map(a => a.uid === uid ? { ...a, ...patch } : a))
+  }, [])
 
-  // Load avatar
-  const loadAvatar = async (
-    avatarId: string,
+  const loadAvatar = useCallback(async (
+    characterId: string,
+    characterName: string,
     container: HTMLElement,
-    callbacks?: {
-      onConnectionState?: (state: ConnectionState) => void
-      onConversationState?: (state: ConversationState) => void
-      onError?: (error: Error) => void
-    },
-  ) => {
-    const avatarManager = getAvatarManager()
-    if (!avatarManager) {
-      throw new Error('SDK not initialized')
+    onProgressCallback?: (progress: number) => void,
+  ): Promise<string> => {
+    const uid = genUid()
+    const inst: AvatarInstance = {
+      uid, characterId, characterName,
+      view: null,
+      connectionState: 'disconnected' as ConnectionState,
+      conversationState: 'idle' as ConversationState,
+      loading: true,
+      loadProgress: 0,
+      error: null,
     }
+    setAvatars(prev => [...prev, inst])
+    setActiveUid(uid)
 
     try {
-      const avatar = await avatarManager.load(avatarId)
+      const avatar = await AvatarManager.shared.load(characterId, (info) => {
+        const p = info.progress ?? 0
+        setAvatars(prev => prev.map(a =>
+          a.uid === uid ? { ...a, loadProgress: p } : a
+        ))
+        onProgressCallback?.(p)
+      })
+      const view = new AvatarView(avatar, container)
 
-      if (!container || !(container instanceof HTMLElement)) {
-        throw new Error(`Invalid container: expected HTMLElement, got ${typeof container}`)
+      view.controller.onConnectionState = (state: ConnectionState) => {
+        setAvatars(prev => prev.map(a => a.uid === uid ? { ...a, connectionState: state } : a))
+      }
+      view.controller.onConversationState = (state: ConversationState) => {
+        setAvatars(prev => prev.map(a => a.uid === uid ? { ...a, conversationState: state } : a))
+      }
+      view.controller.onError = (err: Error) => {
+        setAvatars(prev => prev.map(a => a.uid === uid ? { ...a, error: err.message } : a))
       }
 
-      const avatarView = new AvatarView(avatar, container)
+      viewRefs.current.set(uid, view)
+      setAvatars(prev => prev.map(a => a.uid === uid ? { ...a, view, loading: false } : a))
+      return uid
+    } catch (e: any) {
+      setAvatars(prev => prev.map(a =>
+        a.uid === uid ? { ...a, loading: false, error: e.message } : a
+      ))
+      throw e
+    }
+  }, [])
 
-      setIsConnected(false)
-      avatarView.controller.onConnectionState = (state: ConnectionState) => {
-        setIsConnected(state === 'connected')
-        callbacks?.onConnectionState?.(state)
+  const removeAvatar = useCallback((uid: string) => {
+    const view = viewRefs.current.get(uid)
+    if (view) {
+      view.controller.close()
+      view.dispose()
+      viewRefs.current.delete(uid)
+    }
+    setAvatars(prev => prev.filter(a => a.uid !== uid))
+    setActiveUid(prev => {
+      if (prev === uid) {
+        const remaining = [...viewRefs.current.keys()]
+        return remaining[0] ?? null
       }
-      if (callbacks?.onConversationState) {
-        avatarView.controller.onConversationState = callbacks.onConversationState
-      }
-      if (callbacks?.onError) {
-        avatarView.controller.onError = callbacks.onError
-      }
+      return prev
+    })
+  }, [])
 
-      setAvatarView(avatarView)
-      avatarViewRef.current = avatarView
-      setAvatarController(avatarView.controller)
-    } catch (error) {
-      throw new Error(`Failed to load avatar: ${error instanceof Error ? error.message : String(error)}`)
-    }
-  }
+  const removeAll = useCallback(() => {
+    viewRefs.current.forEach(v => { v.controller.close(); v.dispose() })
+    viewRefs.current.clear()
+    setAvatars([])
+    setActiveUid(null)
+  }, [])
 
-  // Initialize audio context (MUST be called in user gesture context)
-  const initializeAudioContext = useCallback(async () => {
-    if (!avatarView?.controller) {
-      throw new Error('Avatar not loaded')
-    }
-
-    const controller = avatarView.controller as any
-    if (typeof controller.initializeAudioContext !== 'function') {
-      throw new Error('initializeAudioContext() is not available')
-    }
-
-    await controller.initializeAudioContext()
-  }, [avatarView])
-
-  // Connect service (network mode only)
-  const connect = useCallback(async () => {
-    if (!avatarView?.controller) {
-      throw new Error('Avatar not loaded')
-    }
-
-    await initializeAudioContext()
-    await avatarView.controller.start()
-  }, [avatarView, initializeAudioContext])
-
-  // Send audio data (network mode only)
-  const sendAudio = useCallback((audioData: ArrayBuffer, isFinal: boolean = false) => {
-    if (!avatarController) {
-      throw new Error('Avatar not loaded or not connected')
-    }
-    if (!avatarController.send) {
-      throw new Error('send() is only available in network mode')
-    }
-    avatarController.send(audioData, isFinal)
-  }, [avatarController])
-
-  // Yield audio data (external data mode)
-  const yieldAudioData = (data: Uint8Array, isLast: boolean = false): string | null => {
-    if (!avatarController) {
-      throw new Error('Avatar not loaded')
-    }
-    if (!avatarController.yieldAudioData) {
-      throw new Error('yieldAudioData() is only available in host mode')
-    }
-    return avatarController.yieldAudioData(data, isLast)
-  }
-
-  // Yield frames data (external data mode)
-  const yieldFramesData = (keyframes: any[], conversationId: string | null) => {
-    if (!avatarController) {
-      throw new Error('Avatar not loaded')
-    }
-    if (!avatarController.yieldFramesData) {
-      throw new Error('yieldFramesData() is only available in host mode')
-    }
-    if (!conversationId) {
-      throw new Error('conversationId is required for yieldFramesData()')
-    }
-    avatarController.yieldFramesData(keyframes, conversationId)
-  }
-
-  // Get current conversation ID
-  const getCurrentConversationId = useCallback((): string | null => {
-    if (!avatarController) {
-      return null
-    }
-    const controller = avatarController as any
-    if (typeof controller.getCurrentConversationId === 'function') {
-      return controller.getCurrentConversationId()
-    }
-    return null
-  }, [avatarController])
-
-  // Interrupt conversation
-  const interrupt = useCallback(() => {
-    if (!avatarController) {
-      throw new Error('Avatar not loaded or not connected')
-    }
-    avatarController.interrupt()
-  }, [avatarController])
-
-  // Pause playback
-  const pause = useCallback(() => {
-    if (!avatarController) {
-      throw new Error('Avatar not loaded')
-    }
-    avatarController.pause()
-  }, [avatarController])
-
-  // Resume playback
-  const resume = useCallback(async () => {
-    if (!avatarController) {
-      throw new Error('Avatar not loaded')
-    }
-    await avatarController.resume()
-  }, [avatarController])
-
-  // Disconnect (network mode only)
-  const disconnect = useCallback(async () => {
-    if (avatarView?.controller) {
-      avatarView.controller.close()
-      setIsConnected(false)
-    }
-  }, [avatarView])
-
-  // Set audio volume
-  const setVolume = useCallback((volume: number) => {
-    if (!avatarController) {
-      throw new Error('Avatar not loaded')
-    }
-    if (typeof volume !== 'number' || volume < 0 || volume > 1) {
-      throw new Error('Volume must be a number between 0.0 and 1.0')
-    }
-    avatarController.setVolume(volume)
-  }, [avatarController])
-
-  // Get current audio volume
-  const getVolume = useCallback((): number => {
-    if (!avatarController) {
-      throw new Error('Avatar not loaded')
-    }
-    return avatarController.getVolume()
-  }, [avatarController])
-
-  // Unload avatar
-  const unloadAvatar = useCallback(() => {
-    if (avatarView) {
-      avatarView.dispose()
-      setAvatarView(null)
-      avatarViewRef.current = null
-      setAvatarController(null)
-      setIsConnected(false)
-    }
-  }, [avatarView])
-
-  // Cleanup resources on unmount
   useEffect(() => {
     return () => {
-      if (avatarViewRef.current) {
-        avatarViewRef.current.dispose()
-      }
-      if (avatarManagerRef.current) {
-        avatarManagerRef.current = null
-      }
+      viewRefs.current.forEach(v => { v.controller.close(); v.dispose() })
+      viewRefs.current.clear()
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   return {
-    isConnected,
-    avatarView,
-    avatarController,
-    initialize,
-    loadAvatar,
-    connect,
-    initializeAudioContext,
-    sendAudio,
-    yieldAudioData,
-    yieldFramesData,
-    getCurrentConversationId,
-    interrupt,
-    pause,
-    resume,
-    disconnect,
-    unloadAvatar,
-    setVolume,
-    getVolume,
+    avatars, activeUid, activeAvatar, activeController,
+    setActiveUid, loadAvatar, removeAvatar, removeAll, updateAvatar,
   }
 }

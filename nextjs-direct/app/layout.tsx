@@ -2,8 +2,8 @@ import type { Metadata } from 'next'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'SPAvatar SDK - Next.js Direct Example',
-  description: 'Next.js demo with direct SDK integration (no iframe)',
+  title: 'AvatarKit Next.js Demo',
+  description: 'AvatarKit SDK direct integration with Next.js',
 }
 
 export default function RootLayout({

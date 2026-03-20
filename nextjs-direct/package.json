@@ -1,15 +1,15 @@
 {
-  "name": "avatarkit-nextjs-direct-example",
+  "name": "avatarkit-nextjs-direct-demo",
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "dev": "next dev -p 5177",
+    "dev": "next dev -p 3000",
     "build": "next build",
-    "start": "next start",
+    "start": "next start -p 3000",
     "lint": "next lint"
   },
   "dependencies": {
-    "@spatialwalk/avatarkit": "1.0.0-beta.82",
+    "@spatialwalk/avatarkit": "1.0.0-beta.91",
     "next": "^14.0.0",
     "react": "^18.3.0",
     "react-dom": "^18.3.0"

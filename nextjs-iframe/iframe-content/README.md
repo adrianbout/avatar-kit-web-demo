@@ -22,7 +22,7 @@ npm run dev
 
 ### 3. Access Example
 
-Open browser and visit: `http://localhost:5174/demo.html`
+Open browser and visit: `http://localhost:5178`
 
 ## 📋 Features
 
@@ -116,8 +116,7 @@ logger.error('Error')
 
 ### Environment Configuration
 
-- **`test`** - Test environment (default)
-- **`us`** - US production environment
+- **`intl`** - International production environment (default)
 - **`cn`** - China production environment
 
 ### Session Token (Required)

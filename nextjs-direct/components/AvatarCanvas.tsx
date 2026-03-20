@@ -1,146 +1,47 @@
 'use client'
 
-/**
- * Avatar Canvas container component
- */
+import { useRef } from 'react'
+import type { AvatarInstance } from '@/hooks/useAvatarSDK'
 
-import { forwardRef, useEffect, useRef, useState } from 'react'
-import type { AvatarView } from '@spatialwalk/avatarkit'
-
-interface AvatarCanvasProps {
-  avatarView?: AvatarView | null
-  onTransformClick?: () => void
-  showTransformButton?: boolean
-  volume?: number
-  onVolumeChange?: (volume: number) => void
-  showVolumeSlider?: boolean
-  showPlayPauseButton?: boolean
-  onPlayPauseClick?: () => void
-  playPauseIcon?: string
-  playPauseTitle?: string
-  playPauseDisabled?: boolean
+interface Props {
+  avatars: AvatarInstance[]
+  activeUid: string | null
+  onContainerReady: (uid: string, el: HTMLDivElement) => void
 }
 
-export const AvatarCanvas = forwardRef<HTMLDivElement, AvatarCanvasProps>((props, ref) => {
-  const { avatarView, onTransformClick, showTransformButton = false, volume = 100, onVolumeChange, showVolumeSlider = false, showPlayPauseButton = false, onPlayPauseClick, playPauseIcon = '▶️', playPauseTitle = 'Play', playPauseDisabled = false } = props
-  const [fps, setFps] = useState<number | null>(null)
+export default function AvatarCanvas({ avatars, activeUid, onContainerReady }: Props) {
+  const containerRefs = useRef<Map<string, HTMLDivElement>>(new Map())
 
-  const frameCountRef = useRef(0)
-  const lastTimeRef = useRef(performance.now())
-  const animationFrameIdRef = useRef<number | null>(null)
-
-  useEffect(() => {
-    const updateFPS = () => {
-      frameCountRef.current++
-      const currentTime = performance.now()
-      const elapsed = currentTime - lastTimeRef.current
-
-      if (elapsed >= 1000) {
-        const newFps = Math.round((frameCountRef.current * 1000) / elapsed)
-        setFps(newFps)
-        frameCountRef.current = 0
-        lastTimeRef.current = currentTime
-      }
-
-      animationFrameIdRef.current = requestAnimationFrame(updateFPS)
-    }
-
-    animationFrameIdRef.current = requestAnimationFrame(updateFPS)
-
-    return () => {
-      if (animationFrameIdRef.current !== null) {
-        cancelAnimationFrame(animationFrameIdRef.current)
-      }
-    }
-  }, [])
+  const gridClass =
+    avatars.length <= 1 ? 'grid-1' :
+    avatars.length === 2 ? 'grid-2' :
+    'grid-4'
 
   return (
-    <div ref={ref} className="canvas-container">
-      <div className="performance-display">
-        <div className="fps-display">FPS: {fps !== null ? fps : '--'}</div>
-      </div>
-      {showPlayPauseButton && !playPauseDisabled && (
-        <button
-          onClick={onPlayPauseClick}
-          title={playPauseTitle}
-          style={{
-            position: 'absolute',
-            bottom: '12px',
-            left: '12px',
-            width: '72px',
-            height: '72px',
-            background: 'transparent',
-            color: 'white',
-            border: 'none',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontSize: '36px',
-            zIndex: 1000,
-            transition: 'all 0.2s',
-            lineHeight: '1',
-          }}
-        >
-          {playPauseIcon}
-        </button>
-      )}
-
-      {showVolumeSlider && (
-        <div style={{ position: 'absolute', right: '12px', bottom: '60px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', zIndex: 1000 }}>
-          <span style={{ fontSize: '18px', color: 'white', background: 'rgba(0, 0, 0, 0.7)', padding: '4px', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '28px', height: '28px' }}>
-            🔊
-          </span>
-          <input
-            type="range"
-            min="0"
-            max="100"
-            value={volume}
-            onChange={(e) => onVolumeChange?.(parseInt(e.target.value))}
-            style={{
-              width: '36px',
-              height: '120px',
-              cursor: 'pointer',
-              writingMode: 'vertical-lr' as any,
-              WebkitAppearance: 'slider-vertical' as any,
-            }}
-          />
-          <span style={{ fontSize: '12px', color: 'white', background: 'rgba(0, 0, 0, 0.7)', padding: '2px 6px', borderRadius: '4px', minWidth: '36px', textAlign: 'center' }}>
-            {volume}%
-          </span>
+    <div className={`avatar-canvas ${gridClass}`}>
+      {avatars.length === 0 && (
+        <div className="canvas-empty">
+          Select a character to get started
         </div>
       )}
-
-      {showTransformButton && (
-        <button
-          className="transform-button"
-          onClick={onTransformClick}
-          title="Transform Settings"
-          style={{
-            position: 'absolute',
-            bottom: '12px',
-            right: '12px',
-            width: '36px',
-            height: '36px',
-            background: 'rgba(0, 0, 0, 0.7)',
-            color: 'white',
-            border: 'none',
-            borderRadius: '50%',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontSize: '18px',
-            zIndex: 1000,
-            transition: 'all 0.2s',
-            lineHeight: '1',
-          }}
+      {avatars.map(a => (
+        <div
+          key={a.uid}
+          className={`canvas-cell ${a.uid === activeUid ? 'active-cell' : ''}`}
         >
-          ⚙️
-        </button>
-      )}
+          {a.loading && <div className="canvas-loading">Loading...</div>}
+          {a.error && <div className="canvas-error">{a.error}</div>}
+          <div
+            className="canvas-container"
+            ref={el => {
+              if (el && !containerRefs.current.has(a.uid)) {
+                containerRefs.current.set(a.uid, el)
+                onContainerReady(a.uid, el)
+              }
+            }}
+          />
+        </div>
+      ))}
     </div>
   )
-})
-
-AvatarCanvas.displayName = 'AvatarCanvas'
+}

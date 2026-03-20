@@ -1,5 +1,5 @@
 {
-  "name": "spavatarkit-vanilla-example",
+  "name": "avatarkit-vanilla-demo",
   "private": true,
   "type": "module",
   "version": "1.0.0",
@@ -9,9 +9,10 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@spatialwalk/avatarkit": "1.0.0-beta.82"
+    "@spatialwalk/avatarkit": "1.0.0-beta.91"
   },
   "devDependencies": {
+    "typescript": "^5.0.0",
     "vite": "^5.0.0"
   }
 }

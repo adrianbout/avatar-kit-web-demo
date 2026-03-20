@@ -1,156 +1,48 @@
-<template>
-  <div ref="canvasContainerRef" class="canvas-container">
-    <div class="performance-display">
-      <div class="fps-display">FPS: {{ fps !== null ? fps : '--' }}</div>
-    </div>
-    <!-- Play/Pause button (bottom left) -->
-    <button
-      v-if="showPlayPauseButton && !playPauseDisabled"
-      @click="onPlayPauseClick"
-      :title="playPauseTitle"
-      style="position: absolute; bottom: 12px; left: 12px; width: 72px; height: 72px; background: transparent; color: white; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 36px; z-index: 1000; transition: all 0.2s; line-height: 1;"
-    >
-      {{ playPauseIcon }}
-    </button>
-    
-    <!-- Volume control (above transform button, right side) -->
-    <div v-if="showVolumeSlider" style="position: absolute; right: 12px; bottom: 60px; display: flex; flex-direction: column; align-items: center; gap: 8px; z-index: 1000;">
-      <span style="font-size: 18px; color: white; background: rgba(0, 0, 0, 0.7); padding: 4px; border-radius: 4px; display: flex; align-items: center; justify-content: center; width: 28px; height: 28px;">
-        🔊
-      </span>
-      <input
-        type="range"
-        min="0"
-        max="100"
-        :value="volume"
-        @input="(e) => onVolumeChange?.(parseInt((e.target as HTMLInputElement).value))"
-        orient="vertical"
-        style="width: 36px; height: 120px; cursor: pointer; writing-mode: bt-lr; -webkit-appearance: slider-vertical;"
-      />
-      <span style="font-size: 12px; color: white; background: rgba(0, 0, 0, 0.7); padding: 2px 6px; border-radius: 4px; min-width: 36px; text-align: center;">
-        {{ volume }}%
-      </span>
-    </div>
-    
-    <!-- Transform button (bottom right) -->
-    <button
-      v-if="showTransformButton"
-      class="transform-button"
-      @click="onTransformClick"
-      title="Transform Settings"
-      style="position: absolute; bottom: 12px; right: 12px; width: 36px; height: 36px; background: rgba(0, 0, 0, 0.7); color: white; border: none; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 18px; z-index: 1000; transition: all 0.2s; line-height: 1;"
-    >
-      ⚙️
-    </button>
-  </div>
-</template>
-
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue'
-import type { AvatarView } from '@spatialwalk/avatarkit'
+import { ref } from 'vue'
+import type { AvatarInstance } from '../composables/useAvatarSDK'
 
-interface Props {
-  avatarView?: AvatarView | null
-  showTransformButton?: boolean
-  onTransformClick?: () => void
-  volume?: number
-  onVolumeChange?: (volume: number) => void
-  showVolumeSlider?: boolean
-  showPlayPauseButton?: boolean
-  onPlayPauseClick?: () => void
-  playPauseIcon?: string
-  playPauseTitle?: string
-  playPauseDisabled?: boolean
+defineProps<{
+  avatars: AvatarInstance[]
+  activeUid: string | null
+}>()
+
+const emit = defineEmits<{
+  containerReady: [uid: string, el: HTMLDivElement]
+}>()
+
+const containerRefs = ref<Map<string, HTMLDivElement>>(new Map())
+
+function gridClass(count: number) {
+  if (count <= 1) return 'grid-1'
+  if (count === 2) return 'grid-2'
+  return 'grid-4'
 }
 
-const props = withDefaults(defineProps<Props>(), {
-  showTransformButton: false,
-  showVolumeSlider: false,
-  volume: 100,
-  showPlayPauseButton: false,
-  playPauseIcon: '▶️',
-  playPauseTitle: 'Play',
-  playPauseDisabled: false,
-})
-
-const canvasContainerRef = ref<HTMLDivElement | null>(null)
-const fps = ref<number | null>(null)
-
-const frameCount = ref(0)
-const lastTime = ref(performance.now())
-let animationFrameId: number | null = null
-
-// FPS monitoring
-const updateFPS = () => {
-  frameCount.value++
-  const currentTime = performance.now()
-  const elapsed = currentTime - lastTime.value
-
-  if (elapsed >= 1000) {
-    // 每秒更新一次FPS
-    fps.value = Math.round((frameCount.value * 1000) / elapsed)
-    frameCount.value = 0
-    lastTime.value = currentTime
+function setContainerRef(uid: string, el: HTMLDivElement | null) {
+  if (el && !containerRefs.value.has(uid)) {
+    containerRefs.value.set(uid, el)
+    emit('containerReady', uid, el)
   }
-
-  animationFrameId = requestAnimationFrame(updateFPS)
 }
-
-onMounted(() => {
-  animationFrameId = requestAnimationFrame(updateFPS)
-})
-
-onUnmounted(() => {
-  if (animationFrameId !== null) {
-    cancelAnimationFrame(animationFrameId)
-  }
-})
-
-defineExpose({
-  canvasContainerRef: canvasContainerRef,
-  // Expose the DOM element directly for easier access
-  get canvasContainer() {
-    return canvasContainerRef.value
-  }
-})
 </script>
 
-<style scoped>
-.canvas-container {
-  background: #f5f5f5;
-  border-radius: 12px;
-  overflow: hidden;
-  aspect-ratio: 1 / 1;
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  position: relative;
-}
-
-.performance-display {
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  z-index: 1000;
-  pointer-events: none;
-  user-select: none;
-}
-
-.fps-display {
-  background: rgba(0, 0, 0, 0.7);
-  color: #00ff00;
-  padding: 4px 10px;
-  border-radius: 4px;
-  font-family: 'Courier New', monospace;
-  font-size: 12px;
-  font-weight: bold;
-  text-align: right;
-  min-width: 80px;
-}
-</style>
-
+<template>
+  <div :class="['avatar-canvas', gridClass(avatars.length)]">
+    <div v-if="avatars.length === 0" class="canvas-empty">
+      Select a character to get started
+    </div>
+    <div
+      v-for="a in avatars"
+      :key="a.uid"
+      :class="['canvas-cell', { 'active-cell': a.uid === activeUid }]"
+    >
+      <div v-if="a.loading" class="canvas-loading">Loading...</div>
+      <div v-if="a.error" class="canvas-error">{{ a.error }}</div>
+      <div
+        class="canvas-container"
+        :ref="(el) => setContainerRef(a.uid, el as HTMLDivElement)"
+      />
+    </div>
+  </div>
+</template>

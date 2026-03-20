@@ -40,4 +40,3 @@ next-env.d.ts
 
 # Built iframe files in public (will be generated on build)
 /public/iframe
-

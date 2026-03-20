@@ -1,201 +1,179 @@
 'use client'
 
-/**
- * Control panel component
- */
+import { useState, useRef, useCallback, useEffect } from 'react'
+import { DrivingServiceMode, type AvatarController } from '@spatialwalk/avatarkit'
+import type { AvatarInstance } from '@/hooks/useAvatarSDK'
+import { PCM_ASSETS } from '@/data/audioAssets'
+import { loadPcmFile, sendPcmChunks } from '@/utils/audio'
 
-import { useState } from 'react'
-import { Environment as SDKEnvironment } from '@spatialwalk/avatarkit'
-
-interface ControlPanelProps {
-  environment: any
-  avatarId: string
-  avatarIdList: string[]
-  isInitialized: boolean
-  avatarView: any
-  avatarController: any
-  isRecording: boolean
-  isLoading: boolean
-  isConnected: boolean
-  currentPlaybackMode: 'network' | 'external'
-  conversationState?: 'idle' | 'playing' | 'pausing' | null
-  isSendingAudio?: boolean
-  onAvatarIdChange: (id: string) => void
-  onLoadAvatar: () => void
-  onConnect: () => void
-  onLoadAudio?: () => void
-  onStartRecord: () => void
-  onStopRecord: () => void
-  onInterrupt: () => void
-  onDisconnect: () => void
-  onUnloadAvatar: () => void
+interface AvatarSlot {
+  uid: string
+  index: number
+  name: string
 }
 
-export function ControlPanel({
-  environment,
-  avatarId,
-  avatarIdList,
-  isInitialized,
-  avatarView,
-  avatarController,
-  isRecording,
-  isLoading,
-  isConnected,
-  currentPlaybackMode,
-  conversationState,
-  isSendingAudio = false,
-  onAvatarIdChange,
-  onLoadAvatar,
-  onConnect,
-  onLoadAudio,
-  onStartRecord,
-  onStopRecord,
-  onInterrupt,
-  onDisconnect,
-  onUnloadAvatar,
-}: ControlPanelProps) {
-  const [showAddIdModal, setShowAddIdModal] = useState(false)
-  const [newAvatarId, setNewAvatarId] = useState('')
+interface Props {
+  mode: DrivingServiceMode
+  activeAvatar: AvatarInstance | null
+  activeController: AvatarController | null
+  multiMode?: boolean
+  avatarSlots?: AvatarSlot[]
+  activeUid?: string | null
+  onSlotSelect?: (uid: string) => void
+}
 
-  const envName = environment === SDKEnvironment.cn ? 'CN' :
-                 environment === SDKEnvironment.intl ? 'International' :
-                 'Test'
+export default function ControlPanel({ mode, activeAvatar, activeController, multiMode, avatarSlots, activeUid, onSlotSelect }: Props) {
+  const [sending, setSending] = useState(false)
+  const [hostLoading, setHostLoading] = useState(false)
+  const cancelRef = useRef<(() => void) | null>(null)
+  const isSDK = mode === DrivingServiceMode.sdk
+  const connected = activeAvatar?.connectionState === 'connected'
+  const hasAvatar = activeAvatar?.view !== null && !activeAvatar?.loading
 
-  const handleAddAvatarId = () => {
-    const trimmedId = newAvatarId.trim()
-    if (trimmedId) {
-      onAvatarIdChange(trimmedId)
-      setNewAvatarId('')
-      setShowAddIdModal(false)
+  const handleStart = useCallback(async () => {
+    if (!activeController) return
+    try {
+      await (activeController as any).initializeAudioContext()
+      await activeController.start()
+    } catch (e: any) {
+      console.error('Start failed:', e)
     }
+  }, [activeController])
+
+  const handleSendPcm = useCallback(async (path: string) => {
+    if (!activeController || sending) return
+    setSending(true)
+    try {
+      await (activeController as any).initializeAudioContext()
+      const data = await loadPcmFile(path)
+      cancelRef.current = sendPcmChunks(
+        data,
+        (chunk, end) => activeController.send(chunk.buffer as ArrayBuffer, end),
+        () => setSending(false),
+      )
+    } catch (e: any) {
+      console.error('Send failed:', e)
+      setSending(false)
+    }
+  }, [activeController, sending])
+
+  const handleHostDemo = useCallback(async () => {
+    if (!activeController || hostLoading) return
+    setHostLoading(true)
+    try {
+      await (activeController as any).initializeAudioContext()
+      const res = await fetch('/audio/host_demo.json')
+      const json = await res.json()
+      const audioBytes = Uint8Array.from(atob(json.audio_base64), c => c.charCodeAt(0))
+      const animFrames = (json.animation_messages_base64 as string[]).map((b64: string) =>
+        Uint8Array.from(atob(b64), c => c.charCodeAt(0))
+      )
+      const convId = (activeController as any).yieldAudioData(audioBytes, true)
+      ;(activeController as any).yieldFramesData(animFrames, convId)
+    } catch (e: any) {
+      console.error('Host demo failed:', e)
+    } finally {
+      setHostLoading(false)
+    }
+  }, [activeController, hostLoading])
+
+  const handlePause = () => activeController?.pause()
+  const handleResume = () => activeController?.resume()
+  const handleInterrupt = () => {
+    activeController?.interrupt()
+    if (cancelRef.current) { cancelRef.current(); cancelRef.current = null }
+    setSending(false)
   }
+
+  // Cancel ongoing audio send when disconnected
+  useEffect(() => {
+    if (!connected && cancelRef.current) {
+      cancelRef.current()
+      cancelRef.current = null
+      setSending(false)
+    }
+  }, [connected])
 
   return (
     <div className="control-panel">
-      <h2>🎮 Control Panel</h2>
-      <div className="form-group">
-        <label>Environment</label>
-        <div style={{ padding: '8px 12px', background: '#f0f0f0', borderRadius: '6px', color: '#666', fontSize: '14px' }}>
-          {envName}
-        </div>
-      </div>
+      <h3>Controls</h3>
 
-      <div className="form-group">
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-          <label style={{ marginBottom: 0, display: 'inline-block', lineHeight: '22px' }}>Avatar ID</label>
-          <button
-            onClick={() => setShowAddIdModal(true)}
-            style={{
-              padding: 0, margin: 0, background: '#667eea', color: 'white', border: 'none',
-              borderRadius: '4px', cursor: 'pointer', fontSize: '14px', lineHeight: '22px',
-              width: '22px', height: '22px', display: 'inline-flex', alignItems: 'center',
-              justifyContent: 'center', flexShrink: 0
-            }}
-            title="Add new Avatar ID"
-          >
-            ➕
-          </button>
-          <a
-            href="https://docs.spatialreal.ai/overview/test-avatars"
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{
-              padding: 0, margin: 0, background: '#10b981', color: 'white', border: 'none',
-              borderRadius: '4px', cursor: 'pointer', fontSize: '14px', lineHeight: '22px',
-              width: '22px', height: '22px', display: 'inline-flex', alignItems: 'center',
-              justifyContent: 'center', flexShrink: 0, textDecoration: 'none'
-            }}
-            title="Get test avatar IDs"
-          >
-            🔗
-          </a>
-        </div>
-        <select value={avatarId} onChange={(e) => onAvatarIdChange(e.target.value)}>
-          <option value="">Select Avatar ID</option>
-          {avatarIdList.map((id) => (
-            <option key={id} value={id}>{id}</option>
-          ))}
-        </select>
-      </div>
-
-      <div className="button-group">
-        <button disabled={!isInitialized || !!avatarView || isLoading || !avatarId.trim()} onClick={onLoadAvatar}>
-          1. Load Avatar
-        </button>
-        <button disabled={!avatarView || currentPlaybackMode !== 'network' || isConnected || isLoading} onClick={onConnect}>
-          2. Connect Service
-        </button>
-        {currentPlaybackMode === 'network' && onLoadAudio && (
-          <button disabled={!avatarController || !isConnected || isLoading || conversationState === 'playing' || conversationState === 'pausing' || isSendingAudio} onClick={onLoadAudio}>
-            Load Audio
-          </button>
-        )}
-        <button disabled={!avatarController || currentPlaybackMode !== 'network' || !isConnected || isRecording || isLoading || conversationState === 'playing' || conversationState === 'pausing' || isSendingAudio} onClick={onStartRecord}>
-          3. Start Recording
-        </button>
-        <button disabled={!avatarController || (currentPlaybackMode === 'network' && !isRecording) || (currentPlaybackMode === 'external' && isLoading)} onClick={onStopRecord}>
-          {currentPlaybackMode === 'network' ? 'Stop Recording' : 'Play Data'}
-        </button>
-        <button disabled={!avatarController || (currentPlaybackMode === 'network' && !isConnected)} onClick={onInterrupt}>
-          Interrupt
-        </button>
-        <button disabled={!avatarController || currentPlaybackMode !== 'network' || !isConnected} onClick={onDisconnect}>
-          Disconnect
-        </button>
-        <button disabled={!avatarView} onClick={onUnloadAvatar} style={{ background: '#ef4444' }}>
-          Unload Avatar
-        </button>
-      </div>
-
-      {showAddIdModal && (
-        <div
-          style={{
-            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-            background: 'rgba(0, 0, 0, 0.5)', display: 'flex',
-            alignItems: 'center', justifyContent: 'center', zIndex: 1000
-          }}
-          onClick={() => setShowAddIdModal(false)}
-        >
-          <div
-            style={{ background: 'white', padding: '24px', borderRadius: '12px', minWidth: '400px', maxWidth: '90%' }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h3 style={{ marginTop: 0, marginBottom: '16px' }}>Add New Avatar ID</h3>
-            <input
-              type="text"
-              value={newAvatarId}
-              onChange={(e) => setNewAvatarId(e.target.value)}
-              placeholder="Enter Avatar ID"
-              style={{
-                width: '100%', padding: '10px 12px', border: '1px solid #ddd',
-                borderRadius: '8px', fontSize: '14px', marginBottom: '16px', boxSizing: 'border-box'
-              }}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') handleAddAvatarId()
-                else if (e.key === 'Escape') setShowAddIdModal(false)
-              }}
-              autoFocus
-            />
-            <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-              <button
-                onClick={() => setShowAddIdModal(false)}
-                style={{ padding: '8px 16px', background: '#f0f0f0', border: 'none', borderRadius: '6px', cursor: 'pointer' }}
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleAddAvatarId}
-                disabled={!newAvatarId.trim()}
-                style={{
-                  padding: '8px 16px', background: '#667eea', color: 'white', border: 'none',
-                  borderRadius: '6px', cursor: newAvatarId.trim() ? 'pointer' : 'not-allowed',
-                  opacity: newAvatarId.trim() ? 1 : 0.5
-                }}
-              >
-                Add
-              </button>
-            </div>
+      {activeAvatar && (
+        <div className="status-bar">
+          <div className="status-row">
+            <span className="status-label">Connection</span>
+            <span className={`status-value ${activeAvatar.connectionState}`}>
+              {activeAvatar.connectionState}
+            </span>
           </div>
+          <div className="status-row">
+            <span className="status-label">Conversation</span>
+            <span className="status-value">{activeAvatar.conversationState}</span>
+          </div>
+          {activeAvatar.error && (
+            <div className="status-row error">
+              <span className="status-label">Error</span>
+              <span className="status-value error-text">{activeAvatar.error}</span>
+            </div>
+          )}
+        </div>
+      )}
+
+      {multiMode && avatarSlots && avatarSlots.length > 0 && (
+        <div className="slot-selector">
+          <h4>Active Avatar</h4>
+          <div className="slot-list">
+            {avatarSlots.map(s => (
+              <button
+                key={s.uid}
+                className={`slot-btn ${s.uid === activeUid ? 'active' : ''}`}
+                onClick={() => onSlotSelect?.(s.uid)}
+              >
+                <span className="slot-index">{s.index}</span>
+                <span className="slot-name">{s.name}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {!hasAvatar && (
+        <p className="panel-hint">Load a character first</p>
+      )}
+
+      {isSDK && hasAvatar && (
+        <>
+          <button className="primary full-width" disabled={connected || !hasAvatar} onClick={handleStart}>
+            {connected ? 'Connected' : 'Start'}
+          </button>
+          <div className="audio-list">
+            <h4>Audio Files</h4>
+            {PCM_ASSETS.map(a => (
+              <button key={a.path} className="secondary full-width audio-btn" disabled={!connected || sending} onClick={() => handleSendPcm(a.path)}>
+                {sending ? '...' : `▶ ${a.name}`}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+
+      {!isSDK && hasAvatar && (
+        <>
+          <button className="primary full-width" disabled={hostLoading || !hasAvatar} onClick={handleHostDemo}>
+            {hostLoading ? 'Loading...' : '▶ Play Demo'}
+          </button>
+          <p className="host-hint">
+            This demo uses pre-recorded data. For real-time interaction, integrate with the{' '}
+            <a href="https://docs.spatialreal.ai/guide/host-mode" target="_blank" rel="noreferrer">Server SDK</a>.
+          </p>
+        </>
+      )}
+
+      {hasAvatar && (
+        <div className="btn-row">
+          <button className="secondary" onClick={handlePause}>Pause</button>
+          <button className="secondary" onClick={handleResume}>Resume</button>
+          <button className="danger" onClick={handleInterrupt}>Interrupt</button>
         </div>
       )}
     </div>

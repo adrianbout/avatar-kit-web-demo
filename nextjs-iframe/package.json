@@ -1,14 +1,14 @@
 {
-  "name": "spavatarkit-nextjs-iframe-example",
+  "name": "avatarkit-nextjs-iframe-demo",
   "version": "1.0.0",
   "private": true,
   "scripts": {
     "dev": "concurrently -n \"iframe,nextjs\" -c \"cyan,magenta\" \"npm run dev:iframe\" \"npm run dev:nextjs\"",
-    "dev:nextjs": "next dev -p 5177",
-    "dev:iframe": "cd iframe-content && npm run dev -- --port 5178",
+    "dev:nextjs": "next dev -p 3001",
+    "dev:iframe": "cd iframe-content && npm run dev",
     "build": "npm run build:iframe && next build",
     "build:iframe": "cd iframe-content && npm run build && cd .. && node scripts/copy-iframe.js",
-    "start": "next start",
+    "start": "next start -p 3001",
     "lint": "next lint",
     "install:all": "npm install && cd iframe-content && npm install",
     "clean": "rm -rf .next public/iframe iframe-content/dist"
@@ -26,4 +26,3 @@
     "typescript": "^5.0.0"
   }
 }
-

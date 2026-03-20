@@ -48,10 +48,11 @@ npm run dev
 
 ### 5. Access the Example Pages
 
-- **Vanilla JS**: http://localhost:5174/demo.html
-- **Vue 3**: http://localhost:5175
-- **React**: http://localhost:5176
-- **Next.js iframe**: http://localhost:5177 (requires iframe-content server on port 5178)
+- **Vanilla JS**: http://localhost:5175
+- **Vue 3**: http://localhost:5174
+- **React**: http://localhost:5173
+- **Next.js Direct**: http://localhost:3000
+- **Next.js iframe**: http://localhost:3001
 
 ### 6. Start Using
 
@@ -109,7 +110,7 @@ npm install
 npm run dev
 ```
 
-**Access:** `http://localhost:5174/demo.html`
+**Access:** `http://localhost:5175`
 
 **Features:**
 - Pure JavaScript, no framework dependencies
@@ -134,7 +135,7 @@ npm install
 npm run dev
 ```
 
-**Access:** `http://localhost:5175`
+**Access:** `http://localhost:5174`
 
 **Features:**
 - Vue 3 Composition API
@@ -162,7 +163,7 @@ npm install
 npm run dev
 ```
 
-**Access:** `http://localhost:5176`
+**Access:** `http://localhost:5173`
 
 **Features:**
 - React Hooks with `useCallback` optimization
@@ -189,7 +190,7 @@ npm install
 npm run dev
 ```
 
-**Access:** `http://localhost:5177`
+**Access:** `http://localhost:3000`
 
 **Features:**
 - Next.js 14+ App Router
@@ -199,7 +200,7 @@ npm run dev
 - React Hooks architecture
 - Production-ready configuration
 
-**See:** `nextjs-direct/README.md` for detailed documentation
+**See:** source code for detailed implementation
 
 ### 5. Next.js iframe Example (`nextjs-iframe/`)
 
@@ -218,7 +219,7 @@ npm run install:all  # Install dependencies for both Next.js and iframe content
 npm run dev          # Starts both services automatically
 ```
 
-**Access:** `http://localhost:5177`
+**Access:** `http://localhost:3001`
 
 **Features:**
 - Next.js 14+ App Router
@@ -231,7 +232,7 @@ npm run dev          # Starts both services automatically
 - Production-ready configuration
 - Add custom avatar IDs dynamically via + button
 
-**See:** `nextjs-iframe/README.md` for detailed Next.js iframe integration documentation
+**See:** `nextjs-iframe/iframe-content/README.md` for detailed iframe integration documentation
 
 ## ⚙️ Prerequisites
 
@@ -245,7 +246,7 @@ Before running the examples, ensure the following requirements are met:
   - Safari >= 14.1
   - Edge >= 90
 - **Microphone permission** (for recording functionality)
-- **SDK package** `@spatialwalk/avatarkit@^1.0.0-beta.39` or later (automatically installed with `npm install`)
+- **SDK package** `@spatialwalk/avatarkit@^1.0.0-beta.91` or later (automatically installed with `npm install`)
 
 ## 📝 Usage Steps
 
@@ -519,7 +520,7 @@ After building, verify:
 ## 🔧 Technical Details
 
 - **SDK Import**: All examples use standard npm package import `import('@spatialwalk/avatarkit')`
-- **SDK Version**: `@spatialwalk/avatarkit@^1.0.0-beta.39`
+- **SDK Version**: `@spatialwalk/avatarkit@^1.0.0-beta.91`
 - **Audio Context Initialization**: ⚠️ **Critical**: Before using any audio-related features, you **MUST** initialize the audio context in a user gesture context using `avatarView.controller.initializeAudioContext()`. All demos automatically handle this when you click "Connect Service" (SDK Mode) or "Play Data" (Host Mode). See [Audio Context Initialization](#-audio-context-initialization-required) section for details.
 - **Volume Control**: Audio volume can be adjusted using `setVolume(volume)` API (0.0 to 1.0). All examples include a volume slider in the UI, positioned on the right side above the transform button.
 - **Play/Pause Control**: A play/pause button is available in the bottom left corner of the avatar view. It appears when the avatar is in `playing` or `pausing` state, allowing you to pause or resume playback.
@@ -591,9 +592,9 @@ A: Possible reasons:
 
 ### Q: How to install SDK?
 
-A: Install via npm (SDK version 1.0.0-beta.39 or later):
+A: Install via npm (SDK version 1.0.0-beta.91 or later):
 ```bash
-npm install @spatialwalk/avatarkit@^1.0.0-beta.39
+npm install @spatialwalk/avatarkit@^1.0.0-beta.91
 ```
 
 The examples automatically install the correct version when you run `npm install`.

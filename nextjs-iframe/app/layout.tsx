@@ -2,8 +2,8 @@ import type { Metadata } from 'next'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'SPAvatar SDK - Next.js iframe Example',
-  description: 'SPAvatarKit SDK example using Next.js with iframe integration',
+  title: 'AvatarKit Next.js (iframe) Demo',
+  description: 'AvatarKit SDK iframe isolation approach with Next.js',
 }
 
 export default function RootLayout({
@@ -17,4 +17,3 @@ export default function RootLayout({
     </html>
   )
 }
-

@@ -9,8 +9,8 @@ importers:
   .:
     dependencies:
       '@spatialwalk/avatarkit':
-        specifier: 1.0.0-beta.80
-        version: 1.0.0-beta.80(@webgpu/types@0.1.69)(next@14.2.35(@opentelemetry/api@1.9.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(vite@5.4.21(@types/node@20.19.33)(terser@5.46.0))
+        specifier: 1.0.0-beta.91
+        version: 1.0.0-beta.91(@webgpu/types@0.1.69)(next@14.2.35(@opentelemetry/api@1.9.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(vite@5.4.21(@types/node@20.19.33)(terser@5.46.0))
       next:
         specifier: ^14.0.0
         version: 14.2.35(@opentelemetry/api@1.9.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
@@ -486,8 +486,8 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@spatialwalk/avatarkit@1.0.0-beta.80':
-    resolution: {integrity: sha512-NfyHwO57GwKNEO2JiAqYMYMAaPjufsAB5EmhwclVFJmFHB/CZ+RMwN+fp5CTSJQHbW5CTOX9cYebqeO3UWL90w==}
+  '@spatialwalk/avatarkit@1.0.0-beta.91':
+    resolution: {integrity: sha512-FVcuwT3whQu7eKE3d4QIpOOvhXehPwKtVyGSxMXSh6rlTLIWbyLig13jw0niV8RnCTso34XCpLlbdH+F6suCqQ==}
     peerDependencies:
       '@webgpu/types': '*'
       next: '>=13.0.0'
@@ -1074,7 +1074,7 @@ snapshots:
   '@rollup/rollup-win32-x64-msvc@4.57.1':
     optional: true
 
-  '@spatialwalk/avatarkit@1.0.0-beta.80(@webgpu/types@0.1.69)(next@14.2.35(@opentelemetry/api@1.9.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(vite@5.4.21(@types/node@20.19.33)(terser@5.46.0))':
+  '@spatialwalk/avatarkit@1.0.0-beta.91(@webgpu/types@0.1.69)(next@14.2.35(@opentelemetry/api@1.9.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(vite@5.4.21(@types/node@20.19.33)(terser@5.46.0))':
     dependencies:
       '@bufbuild/protobuf': 2.11.0
       '@guiiai/logg': 1.2.11

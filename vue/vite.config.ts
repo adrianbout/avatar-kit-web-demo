@@ -9,24 +9,16 @@ const __dirname = dirname(fileURLToPath(import.meta.url))
 export default defineConfig({
   plugins: [
     vue(),
-    // Use SDK's Vite plugin to automatically handle WASM configuration
-    // This plugin automatically:
-    // - Sets correct MIME type for WASM files in dev server
-    // - Copies WASM files to dist/assets/ during build
-    // - Generates _headers file for Cloudflare Pages
-    // - Configures optimizeDeps, assetsInclude, and assetsInlineLimit
     avatarkitVitePlugin(),
   ],
   root: __dirname,
   server: {
-    port: 5175,
+    port: 5174,
     open: true,
   },
-  // Use standard npm package import
   resolve: {
     alias: {
       '@': __dirname + '/src',
     },
   },
 })
-
