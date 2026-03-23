@@ -1,0 +1,14 @@
+# 1. Add upstream (one-time setup)
+git remote add upstream https://github.com/spatialwalk/avatar-kit-web-demo.git
+
+# 2. Fetch upstream changes
+git fetch upstream
+
+# 3. Merge into your branch
+git merge upstream/main
+
+# (or rebase instead)
+git rebase upstream/main
+
+Then push to your fork:
+git push origin main

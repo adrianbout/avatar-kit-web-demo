@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git -C d:/800/avatar-kit-web-demo config user.name)",
+      "Bash(git -C d:/800/avatar-kit-web-demo config user.email)",
+      "WebFetch(domain:docs.spatialreal.ai)"
+    ]
+  }
+}
